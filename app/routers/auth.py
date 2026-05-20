@@ -202,6 +202,45 @@ async def login(req: LoginRequest, db=Depends(get_db)):
         "account_id": membership["account_id"],
     }
 
+class ResetPasswordRequest(BaseModel):
+    email: EmailStr
+    code: str
+    new_password: str
+
+@router.post("/forgot-password")
+async def forgot_password(email: EmailStr, db=Depends(get_db)):
+    code = _gen_code()
+    expires = datetime.utcnow() + timedelta(minutes=15)
+    await db.execute(
+        "UPDATE email_verifications SET used=1 WHERE email=? AND used=0", (email,)
+    )
+    await db.execute(
+        "INSERT INTO email_verifications (email, code, expires_at) VALUES (?,?,?)",
+        (email, code, expires.isoformat())
+    )
+    await db.commit()
+    await _send_verification_email(email, code)
+    return {"message": f"{email} рүү нууц үг сэргээх код илгээлээ"}
+
+@router.post("/reset-password")
+async def reset_password(req: ResetPasswordRequest, db=Depends(get_db)):
+    cur = await db.execute(
+        """SELECT id FROM email_verifications
+           WHERE email=? AND code=? AND used=0 AND expires_at > ?""",
+        (req.email, req.code, datetime.utcnow().isoformat())
+    )
+    row = await cur.fetchone()
+    if not row:
+        raise HTTPException(status_code=400, detail="Код буруу эсвэл хугацаа дууссан")
+    await db.execute(
+        "UPDATE email_verifications SET used=1 WHERE id=?", (row["id"],)
+    )
+    hashed = bcrypt.hashpw(req.new_password.encode(), bcrypt.gensalt()).decode()
+    await db.execute(
+        "UPDATE users SET password=? WHERE email=?", (hashed, req.email)
+    )
+    await db.commit()
+    return {"message": "Нууц үг амжилттай өөрчлөгдлөө"}
 
 @router.put("/profile/{user_id}")
 async def setup_profile(user_id: int, req: ProfileSetupRequest, db=Depends(get_db)):
