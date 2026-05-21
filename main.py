@@ -7,8 +7,7 @@ load_dotenv()
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.database import init_db
-from app.routers import auth, accounts, tasks, leaderboard, maps, ai
-
+from app.routers import auth, accounts, tasks, leaderboard, maps, ai, completions
 app = FastAPI(
     title="Tog-e API",
     description="Хосуудын хамтын даалгаврын апп",
@@ -35,6 +34,7 @@ app.include_router(tasks.router, prefix="/api/tasks", tags=["Даалгавру�
 app.include_router(leaderboard.router, prefix="/api/leaderboard", tags=["Тэргүүн жагсаалт"])
 app.include_router(maps.router, prefix="/api/maps", tags=["Газрын зур"])
 app.include_router(ai.router, prefix="/api/ai", tags=["AI"])
+app.include_router(completions.router, prefix="/api/completions", tags=["Биелүүлэлт"])
 
 @app.get("/")
 async def root():

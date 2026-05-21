@@ -251,4 +251,3 @@ async def setup_profile(user_id: int, req: ProfileSetupRequest, db=Depends(get_d
     await db.commit()
     return {"message": "Профайл шинэчлэгдлээ"}
 
-//fghujikl

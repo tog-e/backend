@@ -235,3 +235,55 @@ async def complete_task(task_id: int, req: CompleteTaskRequest, db=Depends(get_d
         "message": f"🎉 Даалгавар дууслаа! +{task['points']} Тог нэмэгдлээ",
         "tog_earned": task["points"],
     }
+class AddRecommendedTaskRequest(BaseModel):
+    account_id: int
+    title: str
+    description: str
+    points: int
+    category: str
+    location_name: str = ""
+    latitude: float = None
+    longitude: float = None
+
+@router.post("/add-recommended")
+async def add_recommended_task(req: AddRecommendedTaskRequest, db=Depends(get_db)):
+    """
+    AI-с санал болгосон taskийг өнөөдрийн даалгавар болгох.
+    Өдөрт 1 удаа л нэмж болно.
+    """
+    from datetime import date
+    today = date.today()
+
+    # Өдөрт 1 удаа шалгах
+    cur = await db.execute(
+        """SELECT COUNT(*) FROM daily_tasks dt
+           JOIN task_templates tt ON tt.id = dt.template_id
+           WHERE dt.account_id=? AND dt.date=? AND tt.category='ai_recommended'""",
+        (req.account_id, today.isoformat())
+    )
+    count = (await cur.fetchone())[0]
+    if count > 0:
+        raise HTTPException(
+            status_code=400,
+            detail="Өнөөдөр AI-с нэг л даалгавар нэмж болно"
+        )
+
+    # Шинэ template үүсгэх
+    cur = await db.execute(
+        """INSERT INTO task_templates 
+           (category, title, description, points, location_name, latitude, longitude)
+           VALUES (?,?,?,?,?,?,?)""",
+        ('ai_recommended', req.title, req.description, req.points,
+         req.location_name, req.latitude, req.longitude)
+    )
+    template_id = cur.lastrowid
+
+    # Өнөөдрийн daily task болгох
+    await db.execute(
+        """INSERT INTO daily_tasks (account_id, template_id, date)
+           VALUES (?,?,?)""",
+        (req.account_id, template_id, today.isoformat())
+    )
+    await db.commit()
+
+    return {"message": "✅ AI даалгавар нэмэгдлээ!", "template_id": template_id}

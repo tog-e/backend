@@ -88,6 +88,26 @@ async def init_db():
                 approved_at   DATETIME DEFAULT CURRENT_TIMESTAMP,
                 PRIMARY KEY (daily_task_id, user_id)
             );
+                               
+            CREATE TABLE IF NOT EXISTS task_completions (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                daily_task_id INTEGER REFERENCES daily_tasks(id) ON DELETE CASCADE,
+                submitted_by    INTEGER REFERENCES users(id),
+                photo_url       TEXT,
+                latitude        REAL,
+                longitude       REAL,
+                status          TEXT DEFAULT 'pending_review',
+                submitted_at    DATETIME DEFAULT CURRENT_TIMESTAMP
+            );
+
+            CREATE TABLE IF NOT EXISTS completion_reviews (
+                id              INTEGER PRIMARY KEY AUTOINCREMENT,
+                completion_id   INTEGER REFERENCES task_completions(id) ON DELETE CASCADE,
+                reviewed_by     INTEGER REFERENCES users(id),
+                decision        TEXT NOT NULL,
+                reviewed_at     DATETIME DEFAULT CURRENT_TIMESTAMP
+            );
+    
         """)
         await db.commit()
 
