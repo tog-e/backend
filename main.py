@@ -27,7 +27,7 @@ app.add_middleware(
 async def startup():
     await init_db()
 
-
+#1
 app.include_router(auth.router, prefix="/api/auth", tags=["Нэвтрэлт"])
 app.include_router(accounts.router, prefix="/api/accounts", tags=["Хамтын акаунт"])
 app.include_router(tasks.router, prefix="/api/tasks", tags=["Даалгаврууд"])
