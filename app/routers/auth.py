@@ -251,3 +251,14 @@ async def setup_profile(user_id: int, req: ProfileSetupRequest, db=Depends(get_d
     await db.commit()
     return {"message": "Профайл шинэчлэгдлээ"}
 
+class UpdateNameRequest(BaseModel):
+    name: str
+
+@router.put("/update-name/{user_id}")
+async def update_name(user_id: int, req: UpdateNameRequest, db=Depends(get_db)):
+    await db.execute(
+        "UPDATE users SET name=? WHERE id=?",
+        (req.name, user_id)
+    )
+    await db.commit()
+    return {"message": "Нэр шинэчлэгдлээ"}

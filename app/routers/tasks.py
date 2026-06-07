@@ -44,7 +44,8 @@ async def _ensure_daily_tasks(account_id: int, today: date, db):
 
     # Аль хэдийн өгсөн template-үүдийг давхардуулахгүйн тулд авах
     cur = await db.execute(
-        "SELECT template_id FROM daily_tasks WHERE account_id=?", (account_id,)
+    "SELECT template_id FROM daily_tasks WHERE account_id=? AND date=?",
+    (account_id, today.isoformat())
     )
     used = {r[0] for r in await cur.fetchall()}
 

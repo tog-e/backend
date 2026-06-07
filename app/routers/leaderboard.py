@@ -12,19 +12,19 @@ router = APIRouter()
 async def get_leaderboard(limit: int = 20, db=Depends(get_db)):
     """Бүх account-уудыг Тог оноогоор жагсааx."""
     cur = await db.execute(
-        """SELECT
-            a.id, a.name as account_name, a.tog_total,
-            COUNT(DISTINCT am.user_id) as member_count,
-            GROUP_CONCAT(u.name, ' & ') as member_names,
-            COUNT(CASE WHEN dt.status='completed' THEN 1 END) as tasks_completed
-           FROM accounts a
-           LEFT JOIN account_members am ON am.account_id=a.id
-           LEFT JOIN users u ON u.id=am.user_id
-           LEFT JOIN daily_tasks dt ON dt.account_id=a.id
-           GROUP BY a.id
-           ORDER BY a.tog_total DESC
-           LIMIT ?""",
-        (limit,)
+    """SELECT
+        a.id, a.name as account_name, a.tog_total,
+        COUNT(DISTINCT am.user_id) as member_count,
+        GROUP_CONCAT(DISTINCT u.name) as member_names,
+        COUNT(CASE WHEN dt.status='completed' THEN 1 END) as tasks_completed
+       FROM accounts a
+       LEFT JOIN account_members am ON am.account_id=a.id
+       LEFT JOIN users u ON u.id=am.user_id
+       LEFT JOIN daily_tasks dt ON dt.account_id=a.id
+       GROUP BY a.id
+       ORDER BY a.tog_total DESC
+       LIMIT ?""",
+    (limit,)
     )
     rows = await cur.fetchall()
 
