@@ -61,41 +61,44 @@ def _gen_code(length: int = 6) -> str:
     return "".join(random.choices(string.digits, k=length))
 
 async def _send_verification_email(email: str, code: str):
-    import smtplib
-    from email.mime.text import MIMEText
-    from email.mime.multipart import MIMEMultipart
+    import httpx
+    api_key = os.getenv("SENDGRID_API_KEY", "")
+    from_email = os.getenv("FROM_EMAIL", "zuvzuw@gmail.com")
     
-    gmail_user = os.getenv("GMAIL_USER", "")
-    gmail_pass = os.getenv("GMAIL_APP_PASSWORD", "")
-    
-    if not gmail_user:
+    if not api_key:
         print(f"[Tog-e] {email} → баталгаажуулах код: {code}")
         return
-    
-    msg = MIMEMultipart("alternative")
-    msg["Subject"] = "Tog-e — Баталгаажуулах код"
-    msg["From"] = gmail_user
-    msg["To"] = email
-    
-    html = f"""
-    <div style="font-family: sans-serif; max-width: 400px; margin: 0 auto;">
-        <h1 style="color: #6C3DE8;">Tog-e ⚡</h1>
-        <p>Таны баталгаажуулах код:</p>
-        <h2 style="background: #F0EBFF; padding: 16px; border-radius: 12px;
-                   text-align: center; letter-spacing: 8px; color: #1A1035;">
-            {code}
-        </h2>
-        <p style="color: #8A85A0;">Код 15 минут хүчинтэй.</p>
-    </div>
-    """
-    msg.attach(MIMEText(html, "html"))
-    
-    try:
-        with smtplib.SMTP_SSL("smtp.gmail.com", 465) as server:
-            server.login(gmail_user, gmail_pass)
-            server.sendmail(gmail_user, email, msg.as_string())
-    except Exception as e:
-        print(f"[Tog-e] Имэйл алдаа: {e}")
+
+    async with httpx.AsyncClient() as client:
+        response = await client.post(
+            "https://api.sendgrid.com/v3/mail/send",
+            headers={
+                "Authorization": f"Bearer {api_key}",
+                "Content-Type": "application/json",
+            },
+            json={
+                "personalizations": [{"to": [{"email": email}]}],
+                "from": {"email": from_email, "name": "Tog-e"},
+                "subject": "Tog-e — Баталгаажуулах код",
+                "content": [{
+                    "type": "text/html",
+                    "value": f"""
+                    <div style="font-family: sans-serif; max-width: 400px; margin: 0 auto;">
+                        <h1 style="color: #6C3DE8;">Tog-e ⚡</h1>
+                        <p>Таны баталгаажуулах код:</p>
+                        <h2 style="background: #F0EBFF; padding: 16px; border-radius: 12px;
+                                   text-align: center; letter-spacing: 8px; color: #1A1035;">
+                            {code}
+                        </h2>
+                        <p style="color: #8A85A0;">Код 15 минут хүчинтэй.</p>
+                    </div>
+                    """
+                }]
+            },
+            timeout=10,
+        )
+        if response.status_code not in [200, 202]:
+            print(f"[Tog-e] SendGrid алдаа: {response.text}")
 
 @router.post("/send-verification")
 async def send_verification(email: EmailStr, db=Depends(get_db)):
