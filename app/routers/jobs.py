@@ -35,7 +35,7 @@ async def fetch_zangia_jobs(limit: int = 20, page: int = 1):
                 "company": item.get("company_name", ""),
                 "location": item.get("address", "Улаанбаатар"),
                 "salary": item.get("salary_phrase", ""),
-                "url": f"https://www.zangia.mn/job/view/{item.get('code', '')}",
+                "url": f"https://www.zangia.mn/job/{item.get('code', '')}",
                 "logo": item.get("logo", ""),
                 "applies": item.get("applies", 0),
             })
