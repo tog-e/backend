@@ -31,7 +31,7 @@ async def get_places(category: str = "all", radius: int = 5000):
     types_to_fetch = PLACE_TYPES if category == "all" else [p for p in PLACE_TYPES if p[0] == category]
     
     async with httpx.AsyncClient() as client:
-        for place_type, label, color in types_to_fetch[:3]:
+        for place_type, label, color in types_to_fetch:
             try:
                 res = await client.get(
                     "https://maps.googleapis.com/maps/api/place/nearbysearch/json",
@@ -46,7 +46,7 @@ async def get_places(category: str = "all", radius: int = 5000):
                 )
                 data = res.json()
                 
-                for place in data.get("results", [])[:5]:
+                for place in data.get("results", [])[:10]:
                     all_places.append({
                         "id": place.get("place_id"),
                         "name": place.get("name"),
